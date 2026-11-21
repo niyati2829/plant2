@@ -195,7 +195,7 @@ graph TD
 ### 15. Real-World Tomato Surveillance & Field-Video Pipeline (Phase G)
 - **Real Tomato Pest Detection (`src/detection/`)**:
   - `real_pest_dataset.py`: Verified data loader for Shehu et al. (2025) *Frontiers in Plant Science* / Zenodo `13324917` under CC BY 4.0. Parses normalized YOLO format for real *Tuta absoluta* (Tomato Leafminer) field damage across 122 images (98 train, 12 val, 12 test) with 319 human-annotated bounding boxes.
-  - `train_real_pest_detector.py` & `evaluate_real_pest_detector.py`: Trains single-stage `TinyYOLODetector` (8x8 grid, 1 box/cell, 7-channel depth) over 35 epochs with AdamW and Cosine Annealing. Checkpointed to `artifacts/checkpoints/pest_detection_real/best_pest_detector_real.pt` (Val mAP@0.5: 0.3460). Achieves holdout test mAP@0.5 of 0.3044 and 97.4 FPS (10.27 ms latency).
+  - `train_yolov8_seg.py` & `evaluate_yolov8_seg.py`: Trains and evaluates the production YOLOv8n-Seg multi-class instance segmentation network (`best_yolov8n_seg.pt`) on real *Tuta absoluta* mines and healthy foliage references. Preserves the legacy baseline checkpoint (`artifacts/checkpoints/pest_detection_real/best_pest_detector_real.pt`) for benchmark comparison.
 - **Video Surveillance Pipeline (`src/surveillance/`)**:
   - `video_processor.py`: Video container decoding (.mp4, .avi), strict safety boundaries ($<60$s duration, $<100$MB file size), metadata extraction, and temporal stride sampling.
   - `frame_analyzer.py`: Multi-task inference engine uniting calibrated `TomatoResNet18` ($T^* = 1.3021$) across 10 tomato diseases with the trained real *Tuta absoluta* pest detector.
