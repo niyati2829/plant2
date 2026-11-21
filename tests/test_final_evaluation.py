@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 
-from src.final_evaluation.error_analysis import (
+from src.evaluation.error_analysis import (
     analyze_classification_errors,
     clean_class_name,
     plot_detailed_confusion_matrix,

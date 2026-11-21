@@ -1,16 +1,13 @@
 """Unified Streamlit Web Application for Tomato Disease and Pest Surveillance System.
 
-Phase H/M3 — Clean, Presentation-Ready 4-Page Navigation Interface:
-1. 🏠 Home & Overview: Project overview, 3 capability cards, performance summary, consolidated benchmarks, tech stack, datasets, and limitations.
-2. 🔬 Disease Classification: Calibrated ResNet18 (T* = 1.3021), top-3 hypotheses, expandable 10-class probabilities, Grad-CAM, and PlantSeg U-Net.
-3. 🐛 Pest Damage Detection: Production YOLOv8n-Seg instance segmentation for Tuta absoluta foliar feeding damage.
+Phase H/M3 — 4-Page Navigation Interface:
+1. 🏠 Home & Overview: Project overview, 4 capability cards, performance summary, consolidated benchmarks, tech stack, datasets, and limitations.
+2. 🔬 Disease Classification: Calibrated ResNet18 (T* = 1.3021), top-3 hypotheses, expandable 10-class probabilities, Grad-CAM, and PlantSeg U-Net foliar lesion segmentation.
+3. 🐛 Pest Damage Detection: Production YOLOv8n-Seg instance segmentation for Tuta absoluta foliar feeding damage and healthy reference foliage.
 4. 📹 Video Surveillance: Real-time multi-task video pipeline (calibrated ResNet18 + YOLOv8n-Seg, HUD telemetry, and temporal disease timeline).
 
 Author: Crop Disease Detection Project Team
 """
-
-# Phase H legacy compatibility reference:
-# ["🏠 Home / Overview", "🔬 Disease Classification", "🐛 Pest Damage Detection (Experimental)", "📹 Video Surveillance", "📊 Analytics & About"]
 
 import hashlib
 import io
@@ -32,7 +29,7 @@ import streamlit as st
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torchvision import transforms
+from torchvision import ops, transforms
 
 # Ensure project root is in sys.path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -45,6 +42,7 @@ from src.detection.real_pest_dataset import REAL_PEST_CLASSES
 from src.interpretability.grad_cam import GradCAM
 from src.interpretability.visualization import overlay_heatmap
 from src.models.transfer_learning import TomatoResNet18
+from src.segmentation.unet import UNet
 from src.surveillance.annotator import VideoAnnotator
 from src.surveillance.frame_analyzer import (
     TOMATO_CLASSES,
@@ -385,54 +383,83 @@ def predict_pests_yolov8(
     iou_threshold: float = 0.45,
     show_healthy: bool = True,
 ) -> Tuple[Image.Image, List[Dict[str, Any]], int, int]:
-    """Run production YOLOv8n-Seg instance segmentation for Tuta absoluta damage."""
+    """Run production YOLOv8n-Seg instance segmentation for Tuta absoluta damage and healthy foliage reference."""
     rgb_image = image.convert("RGB")
     orig_w, orig_h = rgb_image.size
     np_img = np.array(rgb_image)
 
-    # Run inference at sensitive confidence threshold with retina_masks for crisp lesion boundaries
+    # Multi-scale inference: evaluates at base resolution (640) and native aspect resolution
+    # to accurately preserve both broader foliage context and tiny larval feeding mines.
+    scales = [640]
+    max_dim = max(orig_w, orig_h)
+    if max_dim > 700:
+        target_sz = min(1024, int(round(max_dim / 32.0) * 32))
+        if target_sz not in scales:
+            scales.append(target_sz)
+
     run_conf = min(0.05, float(conf_threshold))
-    results = model.predict(rgb_image, conf=run_conf, iou=iou_threshold, retina_masks=True, verbose=False)[0]
+    candidates = []
+
+    for sz in scales:
+        results = model.predict(rgb_image, imgsz=sz, conf=run_conf, iou=iou_threshold, retina_masks=True, verbose=False)[0]
+        if results.boxes is None or len(results.boxes) == 0:
+            continue
+        boxes_xyxy = results.boxes.xyxy.cpu()
+        confs = results.boxes.conf.cpu()
+        clss = results.boxes.cls.cpu()
+        raw_masks = results.masks.xy if (results.masks is not None and getattr(results.masks, "xy", None) is not None) else []
+
+        for i in range(len(boxes_xyxy)):
+            m = raw_masks[i] if i < len(raw_masks) and raw_masks[i] is not None and len(raw_masks[i]) >= 3 else None
+            candidates.append({
+                "box": boxes_xyxy[i],
+                "conf": float(confs[i]),
+                "cls": int(clss[i]),
+                "mask": m,
+            })
 
     detections: List[Dict[str, Any]] = []
     tuta_count = 0
     healthy_region_count = 0
 
-    if results.boxes is None or len(results.boxes) == 0:
+    if not candidates:
         return rgb_image, detections, tuta_count, healthy_region_count
 
-    boxes_xyxy = results.boxes.xyxy.cpu().numpy()
-    confs = results.boxes.conf.cpu().numpy()
-    clss = results.boxes.cls.cpu().numpy()
-    
-    # Robust per-box mask extraction
-    masks_xy = []
-    if results.masks is not None and getattr(results.masks, "xy", None) is not None:
-        raw_masks = results.masks.xy
-        for i in range(len(boxes_xyxy)):
-            if i < len(raw_masks) and raw_masks[i] is not None and len(raw_masks[i]) >= 3:
-                masks_xy.append(raw_masks[i])
-            else:
-                masks_xy.append(None)
-    else:
-        masks_xy = [None] * len(boxes_xyxy)
+    # Multi-scale deduplication using torchvision batched NMS per class
+    all_b = torch.stack([c["box"] for c in candidates])
+    all_s = torch.tensor([c["conf"] for c in candidates])
+    all_c = torch.tensor([c["cls"] for c in candidates])
+
+    keep_indices = ops.batched_nms(all_b, all_s, all_c, float(iou_threshold)).tolist()
+    deduped = [candidates[i] for i in keep_indices]
 
     active_tuta = []
     active_healthy = []
     near_miss_tuta = []
 
-    for b, s, c, m in zip(boxes_xyxy, confs, clss, masks_xy):
-        c_id = int(c)
-        s_val = float(s)
-        item = {"box": b, "conf": s_val, "cls": c_id, "mask": m}
+    # Calibrate healthy reference confidence threshold independently from pest damage slider
+    # to guarantee reference healthy lamina is not discarded by pest-specific confidence thresholding,
+    # while strictly respecting high-confidence filters when explicitly configured.
+    if float(conf_threshold) >= 0.50:
+        healthy_conf_threshold = float(conf_threshold)
+    else:
+        healthy_conf_threshold = max(0.10, min(0.18, float(conf_threshold) * 0.75))
+
+    for item in deduped:
+        c_id = item["cls"]
+        s_val = item["conf"]
+        b_np = item["box"].numpy()
+        m = item["mask"]
+        entry = {"box": b_np, "conf": s_val, "cls": c_id, "mask": m}
+
         if c_id == 1:
             if s_val >= conf_threshold:
-                active_tuta.append(item)
+                active_tuta.append(entry)
             else:
-                near_miss_tuta.append(item)
+                near_miss_tuta.append(entry)
         else:
-            if s_val >= conf_threshold:
-                active_healthy.append(item)
+            if s_val >= healthy_conf_threshold:
+                active_healthy.append(entry)
 
     if "st" in globals() or "streamlit" in sys.modules:
         try:
@@ -690,7 +717,7 @@ def render_home_page():
     )
 
     st.markdown("### Core Capabilities")
-    c1, c2, c3 = st.columns(3, gap="medium")
+    c1, c2, c3, c4 = st.columns(4, gap="small")
 
     with c1:
         st.markdown(
@@ -738,7 +765,28 @@ def render_home_page():
         st.markdown(
             """
             <div class="capability-card">
-                <h4>📹 Automated Field Video Surveillance</h4>
+                <h4>🔬 Foliar Lesion Segmentation</h4>
+                <div><span class="badge badge-framework">PlantSeg U-Net</span></div>
+                <p style="font-size: 0.9rem; color: #444; margin-top: 0.5rem;">
+                    Pixel-level foliar lesion segmentation delineating necrotic tissue and chlorotic infection boundaries.
+                </p>
+                <ul style="font-size: 0.86rem; color: #333; padding-left: 1.2rem; margin-bottom: 0;">
+                    <li><strong>Architecture:</strong> Improved PlantSeg U-Net</li>
+                    <li><strong>Task:</strong> Pixel-wise foliar pathology mask prediction</li>
+                    <li><strong>Resolution:</strong> 256×256 input with dual-head lesion logits</li>
+                    <li><strong>Outputs:</strong> Blended mask overlay, damage fraction (%)</li>
+                    <li><strong>Integration:</strong> Available in Disease module</li>
+                </ul>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with c4:
+        st.markdown(
+            """
+            <div class="capability-card">
+                <h4>📹 Field Video Surveillance</h4>
                 <div><span class="badge badge-framework">Field Pipeline</span></div>
                 <p style="font-size: 0.9rem; color: #444; margin-top: 0.5rem;">
                     Multi-task vision engine integrating calibrated disease classification and YOLOv8n-Seg pest segmentation.
@@ -807,7 +855,7 @@ def render_home_page():
         """
         - **PlantVillage Dataset:** 18,160 leaf images spanning 10 classes (9 pathologies + healthy). Strict leakage-safe splits: 12,712 train (70%), 2,724 validation (15%), 2,724 test (15%).
         - **TutaAbsolutaResearch v4 Dataset:** 937 high-resolution tomato foliage images with verified *Tuta absoluta* feeding mines and healthy reference polygons. Split: 657 train, 188 validation, 92 test.
-        - **Video Surveillance Sequence:** Benchmark field recording (640×480, 30 FPS, 300 frames) tracking foliar condition evolution and pest damage across crop rows.
+        - **PlantSeg Foliar Lesion Benchmark:** Improved U-Net segmenter generating pixel-wise lesion masks and leaf surface damage ratios.
         """
     )
 
@@ -1217,7 +1265,7 @@ def render_pest_detection_page(
 
 
 # ---------------------------------------------------------------------------
-# Page 4: Video Surveillance (Standalone Pipeline)
+# Page 4: Video Surveillance (Multi-Task Pipeline)
 # ---------------------------------------------------------------------------
 
 def render_video_surveillance_page():
@@ -1284,6 +1332,10 @@ def render_video_surveillance_page():
             st.session_state.pop("last_uploaded_vid_id", None)
             st.session_state.pop("saved_video_path", None)
             st.rerun()
+    elif SAMPLE_VIDEO_PATH.exists():
+        if st.checkbox("Use Sample Benchmark Field Video (300 frames, 10s)", value=False):
+            video_to_process = SAMPLE_VIDEO_PATH
+            st.info(f"Loaded benchmark field surveillance video: `{SAMPLE_VIDEO_PATH.name}`")
     else:
         st.session_state.pop("surveillance_results", None)
         st.session_state.pop("surveillance_video_out", None)
@@ -1409,7 +1461,6 @@ def render_video_surveillance_page():
         st.markdown("#### Annotated Surveillance Video Stream")
         if vid_out_p.exists():
             try:
-                # Convert to web-friendly MP4 with H.264 if ffmpeg is available, or display direct bytes
                 st.video(str(vid_out_p))
             except Exception:
                 st.warning("Direct in-browser playback unavailable for this codec. Please download the annotated video below.")
@@ -1449,7 +1500,7 @@ def render_video_surveillance_page():
 
 
 # ---------------------------------------------------------------------------
-# Main Application Controller (Exactly 4 Primary Navigation Pages)
+# Main Application Controller (Clean 4-Page Navigation)
 # ---------------------------------------------------------------------------
 
 def main():
@@ -1504,7 +1555,7 @@ def main():
             index=default_index,
         )
 
-    # Route navigation to exactly 4 distinct pages
+    # Route navigation to 4 primary pages
     if page.startswith("🏠 Home"):
         render_home_page()
     elif page.startswith("🔬 Disease"):

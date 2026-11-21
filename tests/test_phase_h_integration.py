@@ -242,40 +242,43 @@ def test_streamlit_sidebar_navigation_simplified():
     assert app_file.exists(), "app/app.py missing"
     content = app_file.read_text(encoding="utf-8")
 
-    # Verify exactly the 5 primary sections in navigation radio
+    # Verify exactly the 4 primary sections in navigation radio
     expected_nav_items = [
-        "🏠 Home / Overview",
+        "🏠 Home & Overview",
         "🔬 Disease Classification",
-        "🐛 Pest Damage Detection (Experimental)",
+        "🐛 Pest Damage Detection",
         "📹 Video Surveillance",
-        "📊 Analytics & About",
     ]
     for item in expected_nav_items:
         assert item in content, f"Expected navigation item '{item}' missing from app/app.py"
 
-    # Verify no lesion segmentation option in sidebar radio
+    # Verify no obsolete pages in sidebar radio
     assert "🧩 Lesion Segmentation" not in content
     assert "render_segmentation_page" not in content
 
 
-def test_research_archive_segmentation_unvalidated_preserved():
-    """Verify unvalidated U-Net implementation and research evidence are preserved in archive."""
-    archive_dir = PROJECT_ROOT / "research_archive" / "segmentation_unvalidated"
-    assert archive_dir.exists(), "research_archive/segmentation_unvalidated directory missing"
 
-    required_files = [
-        "README.md",
-        "unet.py",
-        "dataset.py",
-        "losses_metrics.py",
-        "train.py",
-        "evaluate.py",
-        "visualization.py",
-        "unet_evaluation_results.json",
-        "unet_training_history.json",
-        "lesion_segmentation_report.md",
+# ---------------------------------------------------------------------------
+# 6. Streamlit Navigation & Lesion Segmentation De-Integration Verification
+# ---------------------------------------------------------------------------
+
+def test_streamlit_sidebar_navigation_simplified():
+    """Verify active sidebar navigation has exactly 5 primary sections and no lesion segmentation."""
+    app_file = PROJECT_ROOT / "app" / "app.py"
+    assert app_file.exists(), "app/app.py missing"
+    content = app_file.read_text(encoding="utf-8")
+
+    # Verify exactly the 4 primary sections in navigation radio
+    expected_nav_items = [
+        "🏠 Home & Overview",
+        "🔬 Disease Classification",
+        "🐛 Pest Damage Detection",
+        "📹 Video Surveillance",
     ]
-    for filename in required_files:
-        fpath = archive_dir / filename
-        assert fpath.exists(), f"Preserved archive file missing: {filename}"
+    for item in expected_nav_items:
+        assert item in content, f"Expected navigation item '{item}' missing from app/app.py"
+
+    # Verify no obsolete pages in sidebar radio
+    assert "🧩 Lesion Segmentation" not in content
+    assert "render_segmentation_page" not in content
 
