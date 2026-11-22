@@ -9,8 +9,9 @@ enableXsrfProtection = false
 maxUploadSize = 100
 
 [theme]
-base = "light"
-primaryColor = "#2e7d32"
-secondaryBackgroundColor = "#f8f9fa"
-textColor = "#1e293b"
+base = "dark"
+primaryColor = "#35C979"
+backgroundColor = "#0B0F0D"
+secondaryBackgroundColor = "#101713"
+textColor = "#F1F5F2"
 font = "sans serif"

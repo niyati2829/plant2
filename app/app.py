@@ -613,85 +613,335 @@ def predict_unet_lesions(
 # ---------------------------------------------------------------------------
 
 def apply_custom_css():
-    """Apply clean, modern styling for the unified application."""
+    """Apply premium, modern dark botanical AI dashboard styling for the application."""
     st.markdown(
         """
         <style>
+        /* Base application styling */
+        .stApp {
+            background-color: #0B0F0D;
+            color: #F1F5F2;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+        }
+
+        /* Typography & Headers */
         .main-header {
-            font-size: 2.1rem;
+            font-size: 2.2rem;
             font-weight: 800;
-            color: #1e293b;
+            color: #F1F5F2;
             margin-bottom: 0.3rem;
+            letter-spacing: -0.02em;
+            line-height: 1.25;
         }
         .sub-header {
             font-size: 1.05rem;
-            color: #64748b;
-            margin-bottom: 1.4rem;
+            color: #A5B3A9;
+            margin-bottom: 1.5rem;
+            font-weight: 400;
+            line-height: 1.45;
         }
+        h1, h2, h3, h4, h5, h6 {
+            color: #F1F5F2 !important;
+            font-weight: 700 !important;
+            letter-spacing: -0.01em;
+        }
+        p, span, label, li {
+            color: #A5B3A9;
+        }
+        strong, b {
+            color: #F1F5F2;
+        }
+
+        /* Sidebar Styling */
+        section[data-testid="stSidebar"] {
+            background-color: #101713 !important;
+            border-right: 1px solid #29372F;
+        }
+        section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+        section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] span {
+            color: #F1F5F2 !important;
+        }
+        section[data-testid="stSidebar"] .stRadio label {
+            color: #F1F5F2 !important;
+            font-weight: 500;
+        }
+
+        /* Cards and Containers */
         .capability-card {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 1.1rem;
+            background-color: #151D18;
+            border: 1px solid #29372F;
+            border-radius: 10px;
+            padding: 1.25rem;
             height: 100%;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            transition: border-color 0.2s ease, transform 0.2s ease;
+        }
+        .capability-card:hover {
+            border-color: #35C979;
+            transform: translateY(-2px);
         }
         .capability-card h4 {
             margin-top: 0;
-            margin-bottom: 0.4rem;
-            color: #0f172a;
+            margin-bottom: 0.5rem;
+            color: #F1F5F2 !important;
+            font-size: 1.08rem;
+            font-weight: 700;
         }
+        .capability-card p {
+            color: #A5B3A9 !important;
+            font-size: 0.88rem;
+            line-height: 1.5;
+        }
+        .capability-card ul {
+            color: #A5B3A9 !important;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+        .capability-card li {
+            color: #A5B3A9 !important;
+        }
+        .capability-card strong {
+            color: #F1F5F2 !important;
+        }
+
+        /* Badges */
         .badge {
             display: inline-block;
-            padding: 0.2rem 0.55rem;
+            padding: 0.25rem 0.6rem;
             font-size: 0.75rem;
             font-weight: 600;
             border-radius: 4px;
             margin-bottom: 0.5rem;
+            letter-spacing: 0.02em;
         }
         .badge-validated {
-            background-color: #dcfce7;
-            color: #166534;
+            background-color: rgba(53, 201, 121, 0.16);
+            color: #35C979;
+            border: 1px solid rgba(53, 201, 121, 0.35);
         }
         .badge-production {
-            background-color: #e0f2fe;
-            color: #0369a1;
+            background-color: rgba(117, 221, 160, 0.16);
+            color: #75DDA0;
+            border: 1px solid rgba(117, 221, 160, 0.35);
         }
         .badge-framework {
-            background-color: #ede9fe;
-            color: #5b21b6;
+            background-color: rgba(165, 180, 252, 0.12);
+            color: #A5B4FC;
+            border: 1px solid rgba(165, 180, 252, 0.3);
         }
         .tech-badge {
             display: inline-block;
-            background-color: #f1f5f9;
-            color: #334155;
-            padding: 0.25rem 0.6rem;
-            border-radius: 4px;
-            font-size: 0.8rem;
+            background-color: #1B2620;
+            color: #F1F5F2;
+            padding: 0.3rem 0.65rem;
+            border-radius: 6px;
+            font-size: 0.82rem;
             font-weight: 500;
             margin-right: 0.4rem;
             margin-bottom: 0.4rem;
-            border: 1px solid #cbd5e1;
+            border: 1px solid #29372F;
         }
+
+        /* Metric Cards */
+        div[data-testid="stMetric"] {
+            background-color: #151D18;
+            border: 1px solid #29372F;
+            border-radius: 8px;
+            padding: 0.9rem 1.1rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        div[data-testid="stMetricLabel"] {
+            color: #A5B3A9 !important;
+            font-size: 0.85rem !important;
+            font-weight: 600 !important;
+        }
+        div[data-testid="stMetricValue"] {
+            color: #35C979 !important;
+            font-size: 1.65rem !important;
+            font-weight: 800 !important;
+        }
+
+        /* Informational and Alert Boxes */
         .disclaimer-box {
-            background-color: #f8fafc;
-            border-left: 4px solid #64748b;
-            padding: 0.8rem 1rem;
-            border-radius: 4px;
+            background-color: #151D18;
+            border: 1px solid #29372F;
+            border-left: 4px solid #35C979;
+            padding: 0.9rem 1.15rem;
+            border-radius: 6px;
             margin-top: 1rem;
             margin-bottom: 1rem;
             font-size: 0.88rem;
-            color: #334155;
+            color: #A5B3A9;
+            line-height: 1.55;
+        }
+        .disclaimer-box strong {
+            color: #F1F5F2;
         }
         .warning-box {
-            background-color: #fffbeb;
-            border-left: 4px solid #f59e0b;
-            padding: 0.8rem 1rem;
-            border-radius: 4px;
+            background-color: #151D18;
+            border: 1px solid #29372F;
+            border-left: 4px solid #F2B84B;
+            padding: 0.9rem 1.15rem;
+            border-radius: 6px;
             margin-top: 0.8rem;
             margin-bottom: 0.8rem;
             font-size: 0.88rem;
-            color: #92400e;
+            color: #F2B84B;
+            line-height: 1.55;
+        }
+        .warning-box strong {
+            color: #F1F5F2;
+        }
+
+        /* Streamlit Native Alerts */
+        div[data-testid="stAlert"] {
+            background-color: #151D18;
+            border: 1px solid #29372F;
+            border-radius: 8px;
+            color: #F1F5F2;
+        }
+
+        /* Action Buttons */
+        .stButton > button {
+            background-color: #1B2620;
+            color: #F1F5F2;
+            border: 1px solid #29372F;
+            border-radius: 6px;
+            font-weight: 600;
+            padding: 0.5rem 1.1rem;
+            transition: all 0.2s ease;
+        }
+        .stButton > button:hover {
+            background-color: #151D18;
+            border-color: #35C979;
+            color: #35C979;
+        }
+        .stButton > button[kind="primary"], .stButton > button[data-testid="baseButton-primary"] {
+            background: linear-gradient(135deg, #35C979 0%, #2BA663 100%) !important;
+            color: #0B0F0D !important;
+            font-weight: 700 !important;
+            border: none !important;
+            box-shadow: 0 2px 10px rgba(53, 201, 121, 0.25);
+        }
+        .stButton > button[kind="primary"]:hover, .stButton > button[data-testid="baseButton-primary"]:hover {
+            background: linear-gradient(135deg, #75DDA0 0%, #35C979 100%) !important;
+            color: #0B0F0D !important;
+            box-shadow: 0 4px 14px rgba(53, 201, 121, 0.4);
+        }
+        .stDownloadButton > button {
+            background-color: #1B2620;
+            color: #75DDA0;
+            border: 1px solid #29372F;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .stDownloadButton > button:hover {
+            background-color: #151D18;
+            border-color: #75DDA0;
+            color: #F1F5F2;
+        }
+
+        /* File Uploader Dropzone */
+        section[data-testid="stFileUploaderDropzone"] {
+            background-color: #151D18 !important;
+            border: 1.5px dashed #29372F !important;
+            border-radius: 8px;
+            padding: 1.5rem 1rem;
+        }
+        section[data-testid="stFileUploaderDropzone"]:hover {
+            border-color: #35C979 !important;
+        }
+        section[data-testid="stFileUploaderDropzone"] span {
+            color: #A5B3A9 !important;
+        }
+
+        /* Progress Bars */
+        div[data-testid="stProgressBar"] > div {
+            background-color: #1B2620;
+            border-radius: 6px;
+            height: 10px;
+        }
+        div[data-testid="stProgressBar"] > div > div {
+            background: linear-gradient(90deg, #35C979 0%, #75DDA0 100%) !important;
+            border-radius: 6px;
+        }
+
+        /* Expanders */
+        div[data-testid="stExpander"] {
+            background-color: #151D18;
+            border: 1px solid #29372F;
+            border-radius: 8px;
+        }
+
+        /* Dataframe / Tables */
+        div[data-testid="stDataFrame"] {
+            border: 1px solid #29372F !important;
+            border-radius: 8px !important;
+            background-color: #151D18 !important;
+        }
+
+        /* Form Inputs & Dropdowns */
+        div[data-baseweb="select"] > div {
+            background-color: #151D18 !important;
+            border-color: #29372F !important;
+            color: #F1F5F2 !important;
+        }
+        div[data-baseweb="popover"] ul {
+            background-color: #151D18 !important;
+            border: 1px solid #29372F !important;
+        }
+        div[data-baseweb="popover"] li {
+            color: #F1F5F2 !important;
+        }
+        div[data-baseweb="popover"] li:hover {
+            background-color: #1B2620 !important;
+        }
+        div[data-baseweb="input"] > div {
+            background-color: #151D18 !important;
+            border-color: #29372F !important;
+            color: #F1F5F2 !important;
+        }
+        div[data-baseweb="input"] input {
+            color: #F1F5F2 !important;
+        }
+
+        /* Controls: Checkbox, Slider, Radio, Selectbox labels */
+        .stCheckbox label span, .stSlider label span, .stSelectbox label span, .stRadio label span {
+            color: #F1F5F2 !important;
+            font-weight: 500;
+        }
+        div[data-testid="stSlider"] div[data-testid="stTickBar"] {
+            color: #A5B3A9 !important;
+        }
+        div[data-testid="stExpander"] details summary {
+            color: #F1F5F2 !important;
+        }
+        div[data-testid="stExpander"] details summary svg {
+            fill: #A5B3A9 !important;
+        }
+
+        /* Horizontal Rules / Dividers */
+        hr {
+            border-color: #29372F !important;
+            margin: 1.8rem 0;
+        }
+
+        /* Captions */
+        div[data-testid="stCaptionContainer"] {
+            color: #A5B3A9 !important;
+        }
+
+        /* Images and Video Player Containers */
+        [data-testid="stImage"] img {
+            border-radius: 8px;
+            border: 1px solid #29372F;
+        }
+        [data-testid="stVideo"] {
+            border-radius: 8px;
+            border: 1px solid #29372F;
+            background-color: #101713;
+            overflow: hidden;
         }
         </style>
         """,
@@ -725,10 +975,10 @@ def render_home_page():
             <div class="capability-card">
                 <h4>🌿 Tomato Disease Classification</h4>
                 <div><span class="badge badge-validated">Validated Production</span></div>
-                <p style="font-size: 0.9rem; color: #444; margin-top: 0.5rem;">
+                <p style="font-size: 0.9rem; color: #A5B3A9; margin-top: 0.5rem;">
                     Calibrated ResNet18 model fine-tuned on the PlantVillage benchmark to diagnose 10 foliar tomato conditions.
                 </p>
-                <ul style="font-size: 0.86rem; color: #333; padding-left: 1.2rem; margin-bottom: 0;">
+                <ul style="font-size: 0.86rem; color: #A5B3A9; padding-left: 1.2rem; margin-bottom: 0;">
                     <li><strong>Architecture:</strong> ResNet18 Transfer Learning</li>
                     <li><strong>Holdout Accuracy:</strong> <strong>99.23%</strong> (N = 2,724)</li>
                     <li><strong>Macro F1-Score:</strong> <strong>0.9885</strong></li>
@@ -746,10 +996,10 @@ def render_home_page():
             <div class="capability-card">
                 <h4>🐛 Tuta absoluta Damage Detection</h4>
                 <div><span class="badge badge-production">YOLOv8n-Seg Production</span></div>
-                <p style="font-size: 0.9rem; color: #444; margin-top: 0.5rem;">
+                <p style="font-size: 0.9rem; color: #A5B3A9; margin-top: 0.5rem;">
                     Instance segmentation model trained on verified tomato foliage to localize leafminer feeding damage tunnels and mines.
                 </p>
-                <ul style="font-size: 0.86rem; color: #333; padding-left: 1.2rem; margin-bottom: 0;">
+                <ul style="font-size: 0.86rem; color: #A5B3A9; padding-left: 1.2rem; margin-bottom: 0;">
                     <li><strong>Model:</strong> YOLOv8n-Seg (3.39M parameters)</li>
                     <li><strong>Task:</strong> Foliar feeding mine instance segmentation</li>
                     <li><strong>Targets:</strong> Larval feeding mines & necrotic tunnels</li>
@@ -767,10 +1017,10 @@ def render_home_page():
             <div class="capability-card">
                 <h4>🔬 Foliar Lesion Segmentation</h4>
                 <div><span class="badge badge-framework">PlantSeg U-Net</span></div>
-                <p style="font-size: 0.9rem; color: #444; margin-top: 0.5rem;">
+                <p style="font-size: 0.9rem; color: #A5B3A9; margin-top: 0.5rem;">
                     Pixel-level foliar lesion segmentation delineating necrotic tissue and chlorotic infection boundaries.
                 </p>
-                <ul style="font-size: 0.86rem; color: #333; padding-left: 1.2rem; margin-bottom: 0;">
+                <ul style="font-size: 0.86rem; color: #A5B3A9; padding-left: 1.2rem; margin-bottom: 0;">
                     <li><strong>Architecture:</strong> Improved PlantSeg U-Net</li>
                     <li><strong>Task:</strong> Pixel-wise foliar pathology mask prediction</li>
                     <li><strong>Resolution:</strong> 256×256 input with dual-head lesion logits</li>
@@ -788,10 +1038,10 @@ def render_home_page():
             <div class="capability-card">
                 <h4>📹 Field Video Surveillance</h4>
                 <div><span class="badge badge-framework">Field Pipeline</span></div>
-                <p style="font-size: 0.9rem; color: #444; margin-top: 0.5rem;">
+                <p style="font-size: 0.9rem; color: #A5B3A9; margin-top: 0.5rem;">
                     Multi-task vision engine integrating calibrated disease classification and YOLOv8n-Seg pest segmentation.
                 </p>
-                <ul style="font-size: 0.86rem; color: #333; padding-left: 1.2rem; margin-bottom: 0;">
+                <ul style="font-size: 0.86rem; color: #A5B3A9; padding-left: 1.2rem; margin-bottom: 0;">
                     <li><strong>Engine:</strong> OpenCV Multi-Task Pipeline</li>
                     <li><strong>Task:</strong> Automated foliar disease and pest inspection</li>
                     <li><strong>Temporal Subsampling:</strong> Configurable Stride (k = 1 to 5)</li>
@@ -1093,8 +1343,8 @@ def render_pest_detection_page(
         """
         <div class="disclaimer-box">
         <strong>📌 Detection Semantics & Reference Labels:</strong><br>
-        • <strong style="color: #d32f2f;">Red Masks / Bounding Boxes:</strong> <strong>Tuta absoluta Feeding Damage</strong> (actual foliar feeding mines and necrotic tunnels).<br>
-        • <strong style="color: #2e7d32;">Green Masks / Bounding Boxes:</strong> <strong>Healthy Foliage / Reference Regions</strong>.
+        • <strong style="color: #FF6464;">Red Masks / Bounding Boxes:</strong> <strong>Tuta absoluta Feeding Damage</strong> (actual foliar feeding mines and necrotic tunnels).<br>
+        • <strong style="color: #35C979;">Green Masks / Bounding Boxes:</strong> <strong>Healthy Foliage / Reference Regions</strong>.
         </div>
         """,
         unsafe_allow_html=True,
